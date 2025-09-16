@@ -38,7 +38,6 @@ public class MoviesService {
         IntervalSummary summary = new IntervalSummary();
         List<Movie> movies = getAllMovies();
         List<AwardsInterval> intervalList = new ArrayList<>();
-        //separa uma lista apenas com os produtores dos filmes
         List<String> producersAux = movies.stream().map(Movie::getProducers).distinct().toList();
         List<String> producers = new ArrayList<>();
         producersAux.forEach(producer -> {
@@ -58,18 +57,12 @@ public class MoviesService {
             AwardsInterval awardsIntervalLongest = new AwardsInterval();
             awardsIntervalShortest.setProducer(producer);
             awardsIntervalLongest.setProducer(producer);
-            //separa a lista de filmes premiados por produtor
             List<Movie> moviesByProducer = movies.stream()
                     .filter(m -> m.getProducers().toUpperCase().contains(producer.toUpperCase()) && m.getWinner().equals(true))
                     .sorted(Comparator.comparingInt(Movie::getYear))
                     .toList();
             int shortestInterval = 300;
             int longestInterval = 0;
-            int previousWinShortest = 0;
-            int previousWinLongest = 0;
-            int followingWinShortest = 0;
-            int followingWinLongest = 0;
-            //compara o menor e o maior periodo entre duas vitorias
             for (int i = 0; i < moviesByProducer.size() - 1; i++) {
                 Movie movie1 = moviesByProducer.get(i);
                 Movie movie2 = moviesByProducer.get(i + 1);
@@ -85,11 +78,9 @@ public class MoviesService {
                 }
                 if (interval > longestInterval && !added) {
                     longestInterval = interval;
-                    previousWinLongest = movie1.getYear();
-                    followingWinLongest = movie2.getYear();
                     awardsIntervalLongest.setInterval(longestInterval);
-                    awardsIntervalLongest.setPreviousWin(previousWinLongest);
-                    awardsIntervalLongest.setFollowingWin(followingWinLongest);
+                    awardsIntervalLongest.setPreviousWin(movie1.getYear());
+                    awardsIntervalLongest.setFollowingWin(movie2.getYear());
                     intervalList.add(awardsIntervalLongest);
                 }
             }
