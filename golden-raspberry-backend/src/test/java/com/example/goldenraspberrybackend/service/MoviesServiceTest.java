@@ -28,7 +28,7 @@ class MoviesServiceTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        doNothing().when(moviesService).readMovies(); // Evita ler o CSV real
+        doNothing().when(moviesService).initDatabase();
     }
 
     @Test

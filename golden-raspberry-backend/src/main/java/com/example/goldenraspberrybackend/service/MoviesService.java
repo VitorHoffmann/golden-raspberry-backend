@@ -5,6 +5,7 @@ import com.example.goldenraspberrybackend.model.IntervalSummary;
 import com.example.goldenraspberrybackend.model.Movie;
 import com.example.goldenraspberrybackend.repository.MovieRepository;
 import com.example.goldenraspberrybackend.util.CsvUtils;
+import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -16,12 +17,17 @@ public class MoviesService {
 
     public MoviesService(MovieRepository movieRepository) {
         this.movieRepository = movieRepository;
-        readMovies();
     }
 
-    public void readMovies() {
-        List<Movie> records = CsvUtils.readCsv("movielist.csv");
-        movieRepository.saveAll(records);
+    @PostConstruct
+    public void initDatabase() {
+        if (movieRepository.count() == 0) {
+            List<Movie> records = CsvUtils.readCsv("movielist.csv");
+            movieRepository.saveAll(records);
+            System.out.println("CSV importado e salvo no banco com sucesso!");
+        } else {
+            System.out.println("Banco já contém registros, importação ignorada.");
+        }
     }
 
     public List<Movie> getAllMovies() {
@@ -38,7 +44,7 @@ public class MoviesService {
         producersAux.forEach(producer -> {
             String[] producerAux = producer.split(" and ");
             for (int i = 0; i < producerAux.length; i++) {
-                String[] producerAux2 = producer.split(", ");
+                String[] producerAux2 = producerAux[i].split(", ");
                 for (int j = 0; j < producerAux2.length ; j++) {
                     if (!producers.contains(producerAux2[j])) {
                         producers.add(producerAux2[j]);
@@ -46,7 +52,8 @@ public class MoviesService {
                 }
             }
         });
-        producers.forEach(producer -> {
+        producers.sort(String::compareTo);
+        for (String producer : producers) {
             AwardsInterval awardsIntervalShortest = new AwardsInterval();
             AwardsInterval awardsIntervalLongest = new AwardsInterval();
             awardsIntervalShortest.setProducer(producer);
@@ -67,32 +74,26 @@ public class MoviesService {
                 Movie movie1 = moviesByProducer.get(i);
                 Movie movie2 = moviesByProducer.get(i + 1);
                 int interval = movie2.getYear() - movie1.getYear();
+                boolean added = false;
                 if (interval < shortestInterval) {
                     shortestInterval = interval;
-                    previousWinShortest = movie1.getYear();
-                    followingWinShortest = movie2.getYear();
+                    awardsIntervalShortest.setInterval(shortestInterval);
+                    awardsIntervalShortest.setPreviousWin(movie1.getYear());
+                    awardsIntervalShortest.setFollowingWin(movie2.getYear());
+                    intervalList.add(awardsIntervalShortest);
+                    added = true;
                 }
-                if (interval > longestInterval) {
+                if (interval > longestInterval && !added) {
                     longestInterval = interval;
                     previousWinLongest = movie1.getYear();
                     followingWinLongest = movie2.getYear();
+                    awardsIntervalLongest.setInterval(longestInterval);
+                    awardsIntervalLongest.setPreviousWin(previousWinLongest);
+                    awardsIntervalLongest.setFollowingWin(followingWinLongest);
+                    intervalList.add(awardsIntervalLongest);
                 }
             }
-
-            // adiciona o menor intervalo
-            awardsIntervalShortest.setInterval(shortestInterval);
-            awardsIntervalShortest.setPreviousWin(previousWinShortest);
-            awardsIntervalShortest.setFollowingWin(followingWinShortest);
-            intervalList.add(awardsIntervalShortest);
-
-            // caso tenha um intervalo maior adiciona
-            if (longestInterval > 0 && previousWinLongest != previousWinShortest) {
-                awardsIntervalLongest.setInterval(longestInterval);
-                awardsIntervalLongest.setPreviousWin(previousWinLongest);
-                awardsIntervalLongest.setFollowingWin(followingWinLongest);
-                intervalList.add(awardsIntervalLongest);
-            }
-        });
+        }
         intervalList.sort(Comparator.comparing(AwardsInterval::getInterval));
         summary.setMin(intervalList.stream()
                 .filter(i -> i.getInterval().equals(intervalList.get(0).getInterval()))

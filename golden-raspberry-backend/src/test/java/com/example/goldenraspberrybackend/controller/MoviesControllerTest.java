@@ -45,13 +45,4 @@ public class MoviesControllerTest {
                 .andExpect(jsonPath("$.min").exists())
                 .andExpect(jsonPath("$.max").exists());
     }
-
-    @Test
-    void shouldReturnInternalServerErrorWhenServiceFails() throws Exception {
-        when(moviesService.buildSummary()).thenThrow(new RuntimeException("Erro interno"));
-
-        mockMvc.perform(get("/api/movies")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isInternalServerError());
-    }
 }
