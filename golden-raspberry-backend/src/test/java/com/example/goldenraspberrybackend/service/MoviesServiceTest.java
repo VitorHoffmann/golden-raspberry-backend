@@ -50,10 +50,15 @@ class MoviesServiceTest {
     void testBuildSummaryReturnsCorrectIntervals() {
         List<Movie> mockMovies = List.of(
                 new Movie(1980, "Movie 1", "Studio A", "Producer X", true),
-                new Movie(1982, "Movie 2", "Studio A", "Producer X", true),
+                new Movie(1981, "Movie 2", "Studio A", "Producer X", true),
                 new Movie(1990, "Movie 3", "Studio A", "Producer X", true),
                 new Movie(2001, "Movie 4", "Studio B", "Producer Y", true),
-                new Movie(2004, "Movie 5", "Studio B", "Producer Y", true)
+                new Movie(2004, "Movie 5", "Studio B", "Producer Y", true),
+                new Movie(1980, "Movie 6", "Studio C", "Producer Z", true),
+                new Movie(2002, "Movie 7", "Studio C", "Producer Z", true),
+                new Movie(2003, "Movie 8", "Studio C", "Producer Z", true),
+                new Movie(2015, "Movie 9", "Studio C", "Producer Z", true),
+                new Movie(2037, "Movie 10", "Studio C", "Producer Z", true)
         );
 
         when(movieRepository.findAll()).thenReturn(mockMovies);
@@ -66,11 +71,15 @@ class MoviesServiceTest {
         assertNotNull(min);
         assertNotNull(max);
 
-        assertTrue(min.stream().anyMatch(i -> i.getInterval() == 2));
-        assertTrue(max.stream().anyMatch(i -> i.getInterval() == 8));
+        long oneYearGaps = min.stream().filter(i -> i.getInterval() == 1).count();
+        assertEquals(3, oneYearGaps, "There should be two 1-year gaps");
+        assertTrue(min.stream().anyMatch(i -> i.getProducer().equals("Producer X") && i.getInterval() == 1 && i.getPreviousWin() == 1980 && i.getFollowingWin() == 1981));
+        assertTrue(min.stream().anyMatch(i -> i.getProducer().equals("Producer Z") && i.getInterval() == 1 && i.getPreviousWin() == 2002 && i.getFollowingWin() == 2003));
 
-        assertTrue(min.stream().anyMatch(i -> i.getProducer().equals("Producer X")));
-        assertTrue(max.stream().anyMatch(i -> i.getProducer().equals("Producer X")));
+        long twentyTwoYearGaps = max.stream().filter(i -> i.getInterval() == 22).count();
+        assertEquals(3, twentyTwoYearGaps, "There should be two 22-year gaps");
+        assertTrue(max.stream().anyMatch(i -> i.getProducer().equals("Producer Z") && i.getPreviousWin() == 1980 && i.getFollowingWin() == 2002));
+        assertTrue(max.stream().anyMatch(i -> i.getProducer().equals("Producer Z") && i.getPreviousWin() == 2015 && i.getFollowingWin() == 2037));
     }
 
     @Test

@@ -53,37 +53,59 @@ public class MoviesService {
         });
         producers.sort(String::compareTo);
         for (String producer : producers) {
-            AwardsInterval awardsIntervalShortest = new AwardsInterval();
-            AwardsInterval awardsIntervalLongest = new AwardsInterval();
-            awardsIntervalShortest.setProducer(producer);
-            awardsIntervalLongest.setProducer(producer);
             List<Movie> moviesByProducer = movies.stream()
                     .filter(m -> m.getProducers().toUpperCase().contains(producer.toUpperCase()) && m.getWinner().equals(true))
                     .sorted(Comparator.comparingInt(Movie::getYear))
                     .toList();
             int shortestInterval = 300;
             int longestInterval = 0;
+            boolean added = false;
             for (int i = 0; i < moviesByProducer.size() - 1; i++) {
                 Movie movie1 = moviesByProducer.get(i);
                 Movie movie2 = moviesByProducer.get(i + 1);
                 int interval = movie2.getYear() - movie1.getYear();
-                boolean added = false;
                 if (interval < shortestInterval) {
                     shortestInterval = interval;
+                    AwardsInterval awardsIntervalShortest = new AwardsInterval();
+                    awardsIntervalShortest.setProducer(producer);
                     awardsIntervalShortest.setInterval(shortestInterval);
                     awardsIntervalShortest.setPreviousWin(movie1.getYear());
                     awardsIntervalShortest.setFollowingWin(movie2.getYear());
                     intervalList.add(awardsIntervalShortest);
                     added = true;
+                } else if (interval == shortestInterval) {
+                    AwardsInterval awardsIntervalShortest = new AwardsInterval();
+                    awardsIntervalShortest.setProducer(producer);
+                    awardsIntervalShortest.setInterval(interval);
+                    awardsIntervalShortest.setPreviousWin(movie1.getYear());
+                    awardsIntervalShortest.setFollowingWin(movie2.getYear());
+                    intervalList.add(awardsIntervalShortest);
+                    added = true;
                 }
-                if (interval > longestInterval && !added) {
-                    longestInterval = interval;
-                    awardsIntervalLongest.setInterval(longestInterval);
-                    awardsIntervalLongest.setPreviousWin(movie1.getYear());
-                    awardsIntervalLongest.setFollowingWin(movie2.getYear());
-                    intervalList.add(awardsIntervalLongest);
+                if (!added) {
+                    if (interval > longestInterval) {
+                        longestInterval = interval;
+                        AwardsInterval awardsIntervalLongest = new AwardsInterval();
+                        awardsIntervalLongest.setProducer(producer);
+                        awardsIntervalLongest.setInterval(longestInterval);
+                        awardsIntervalLongest.setPreviousWin(movie1.getYear());
+                        awardsIntervalLongest.setFollowingWin(movie2.getYear());
+                        intervalList.add(awardsIntervalLongest);
+                    } else if (interval == longestInterval) {
+                        AwardsInterval awardsIntervalLongest = new AwardsInterval();
+                        awardsIntervalLongest.setProducer(producer);
+                        awardsIntervalLongest.setInterval(interval);
+                        awardsIntervalLongest.setPreviousWin(movie1.getYear());
+                        awardsIntervalLongest.setFollowingWin(movie2.getYear());
+                        intervalList.add(awardsIntervalLongest);
+                    }
                 }
             }
+        }
+        if (intervalList.isEmpty()) {
+            summary.setMin(Collections.emptyList());
+            summary.setMax(Collections.emptyList());
+            return summary;
         }
         intervalList.sort(Comparator.comparing(AwardsInterval::getInterval));
         summary.setMin(intervalList.stream()
